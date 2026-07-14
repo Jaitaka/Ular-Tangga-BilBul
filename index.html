@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ular Tangga Matematika Versus</title>
+  <style>
+    :root {
+      --bg: #eef6ff;
+      --panel: #ffffff;
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --success: #15803d;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #dbe5f0;
+      --p1: #ef4444;
+      --p2: #3b82f6;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0, transparent 34%),
+        radial-gradient(circle at bottom right, #dcfce7 0, transparent 30%),
+        var(--bg);
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      width: min(1400px, 96%);
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      color: var(--primary-dark);
+    }
+
+    .header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(560px, 1.4fr) minmax(320px, .8fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: rgba(255,255,255,.96);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, .10);
+    }
+
+    .board-card { padding: 16px; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border: 3px solid #1e3a8a;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .cell {
+      position: relative;
+      min-width: 0;
+      border: 1px solid rgba(30, 58, 138, .18);
+      padding: 4px;
+      background: #eff6ff;
+    }
+
+    .cell:nth-child(4n+1) { background: #fef3c7; }
+    .cell:nth-child(4n+2) { background: #dcfce7; }
+    .cell:nth-child(4n+3) { background: #fce7f3; }
+    .cell:nth-child(4n)   { background: #e0e7ff; }
+
+    .cell-number {
+      position: absolute;
+      top: 3px;
+      left: 5px;
+      font-weight: 800;
+      font-size: clamp(9px, 1.15vw, 15px);
+      opacity: .75;
+    }
+
+    .jump-badge {
+      position: absolute;
+      right: 3px;
+      top: 3px;
+      font-size: clamp(10px, 1.2vw, 16px);
+    }
+
+    .tokens {
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      bottom: 4px;
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .token {
+      width: clamp(15px, 2vw, 25px);
+      height: clamp(15px, 2vw, 25px);
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,.28);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: clamp(8px, 1vw, 12px);
+    }
+
+    .token.p1 { background: var(--p1); }
+    .token.p2 { background: var(--p2); }
+
+    .side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel { padding: 20px; }
+
+    .setup h2, .game-panel h2, .rules h3 {
+      margin-top: 0;
+    }
+
+    .name-grid {
+      display: grid;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus { border-color: var(--primary); }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 13px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+
+    .btn-success {
+      color: #fff;
+      background: linear-gradient(135deg, #22c55e, #15803d);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      background: #e2e8f0;
+    }
+
+    .hidden { display: none !important; }
+
+    .turn-box {
+      padding: 13px;
+      border-radius: 14px;
+      background: #eff6ff;
+      border-left: 6px solid var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .turn-box strong { font-size: 20px; }
+
+    .dice-area {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .dice {
+      width: 84px;
+      height: 84px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 48px;
+      background: #fff;
+      border: 3px solid var(--primary-dark);
+      box-shadow: inset 0 0 0 4px #dbeafe;
+    }
+
+    .question-box {
+      border: 2px dashed #93c5fd;
+      border-radius: 16px;
+      padding: 16px;
+      background: #f8fbff;
+      margin-top: 12px;
+    }
+
+    .question-label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .question {
+      margin: 10px 0 14px;
+      text-align: center;
+      font-size: clamp(25px, 4vw, 38px);
+      font-weight: 900;
+    }
+
+    .answer-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .answer-row .btn { width: auto; }
+
+    .message {
+      min-height: 48px;
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      background: #f1f5f9;
+    }
+
+    .message.success { color: var(--success); background: #dcfce7; }
+    .message.error { color: var(--danger); background: #fee2e2; }
+    .message.info { color: var(--primary-dark); background: #dbeafe; }
+    .message.warning { color: #92400e; background: #fef3c7; }
+
+    .scoreboard {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .player-card {
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .player-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+    }
+
+    .dot.p1 { background: var(--p1); }
+    .dot.p2 { background: var(--p2); }
+
+    .stats {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .position {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .rules ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      color: #475569;
+      line-height: 1.55;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .winner {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .winner .trophy { font-size: 72px; }
+    .winner h2 { color: var(--warning); font-size: 30px; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .board-card { order: 2; }
+      .side { order: 1; }
+    }
+
+    @media (max-width: 620px) {
+      .app { width: 100%; padding: 10px; }
+      .card { border-radius: 16px; }
+      .board-card { padding: 8px; }
+      .panel { padding: 15px; }
+      .dice-area { grid-template-columns: 68px 1fr; }
+      .dice { width: 68px; height: 68px; font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>🐍 Ular Tangga Matematika 🪜</h1>
+      <p>Urutan Operasi Bilangan Bulat</p>
+    </header>
+
+    <section class="layout">
+      <div class="card board-card">
+        <div id="board" class="board" aria-label="Papan ular tangga"></div>
+        <div class="legend">
+          <span>🪜 Tangga: naik</span>
+          <span>🐍 Ular: turun</span>
+          <span>🔴 Pemain 1</span>
+          <span>🔵 Pemain 2</span>
+        </div>
+      </div>
+
+      <div class="side">
+        <section id="setupPanel" class="card panel setup">
+          <h2>Mulai Permainan</h2>
+          <p>Masukkan nama kedua pemain.</p>
+          <div class="name-grid">
+            <label>
+              Nama Pemain 1
+              <input id="name1" type="text" maxlength="20" value="Pemain 1" />
+            </label>
+            <label>
+              Nama Pemain 2
+              <input id="name2" type="text" maxlength="20" value="Pemain 2" />
+            </label>
+          </div>
+          <button id="startBtn" class="btn btn-primary">Mulai Mode Versus</button>
+        </section>
+
+        <section id="gamePanel" class="card panel game-panel hidden">
+          <div id="normalGame">
+            <div class="turn-box">
+              Giliran: <strong id="turnName">Pemain 1</strong>
+            </div>
+
+            <div class="dice-area">
+              <div id="dice" class="dice">⚄</div>
+              <button id="rollBtn" class="btn btn-primary">Lempar Dadu</button>
+            </div>
+
+            <div id="questionBox" class="question-box hidden">
+              <div class="question-label">Jawab untuk dapat melangkah</div>
+              <div id="questionText" class="question">8 + 3 × 2 = ?</div>
+              <div class="answer-row">
+                <input id="answerInput" type="number" step="1" placeholder="Jawaban" />
+                <button id="answerBtn" class="btn btn-success">Jawab</button>
+              </div>
+            </div>
+
+            <div id="message" class="message info">
+              Lempar dadu untuk mendapatkan soal.
+            </div>
+
+            <div id="scoreboard" class="scoreboard"></div>
+
+            <button id="resetBtn" class="btn btn-secondary" style="margin-top:14px;">
+              Ulangi Permainan
+            </button>
+          </div>
+
+          <div id="winnerPanel" class="winner hidden">
+            <div class="trophy">🏆</div>
+            <h2 id="winnerText">Pemenang!</h2>
+            <p id="winnerStats"></p>
+            <button id="playAgainBtn" class="btn btn-primary">Main Lagi</button>
+          </div>
+        </section>
+
+        <section class="card panel rules">
+          <h3>Aturan Permainan</h3>
+          <ul>
+            <li>Pemain bermain bergiliran pada satu perangkat.</li>
+            <li>Lempar dadu, lalu jawab soal urutan operasi.</li>
+            <li>Jawaban benar: maju sesuai angka dadu.</li>
+            <li>Jawaban salah: tidak bergerak dan giliran berpindah.</li>
+            <li>Gunakan urutan: kurung, kali/bagi, lalu tambah/kurang.</li>
+            <li>Pemain pertama yang mencapai kotak 25 menjadi pemenang.</li>
+          </ul>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const snakes = {
+      24: 14,
+      21: 11,
+      17: 7,
+      13: 4
+    };
+
+    const ladders = {
+      3: 9,
+      6: 15,
+      10: 18,
+      12: 22
+    };
+
+    const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+    const boardEl = document.getElementById("board");
+    const setupPanel = document.getElementById("setupPanel");
+    const gamePanel = document.getElementById("gamePanel");
+    const normalGame = document.getElementById("normalGame");
+    const winnerPanel = document.getElementById("winnerPanel");
+    const name1Input = document.getElementById("name1");
+    const name2Input = document.getElementById("name2");
+    const startBtn = document.getElementById("startBtn");
+    const rollBtn = document.getElementById("rollBtn");
+    const answerBtn = document.getElementById("answerBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const answerInput = document.getElementById("answerInput");
+    const questionBox = document.getElementById("questionBox");
+    const questionText = document.getElementById("questionText");
+    const turnName = document.getElementById("turnName");
+    const diceEl = document.getElementById("dice");
+    const messageEl = document.getElementById("message");
+    const scoreboardEl = document.getElementById("scoreboard");
+    const winnerText = document.getElementById("winnerText");
+    const winnerStats = document.getElementById("winnerStats");
+
+    let players = [];
+    let currentPlayer = 0;
+    let rolledNumber = 0;
+    let currentQuestion = null;
+    let awaitingAnswer = false;
+    let gameStarted = false;
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function nonZeroInt(min, max) {
+      let value = 0;
+      while (value === 0) value = randomInt(min, max);
+      return value;
+    }
+
+    function formatNumber(number) {
+      return number < 0 ? `(${number})` : String(number);
+    }
+
+    function generateQuestion() {
+      const type = randomInt(1, 7);
+      let a, b, c, d, q, expression, answer;
+
+      switch (type) {
+        case 1:
+          a = randomInt(-15, 15);
+          b = randomInt(-10, 10);
+          c = randomInt(-9, 9);
+          expression = `${formatNumber(a)} + ${formatNumber(b)} × ${formatNumber(c)}`;
+          answer = a + b * c;
+          break;
+
+        case 2:
+          a = randomInt(-12, 15);
+          b = randomInt(-10, 10);
+          c = nonZeroInt(-7, 7);
+          expression = `(${a} - ${formatNumber(b)}) × ${formatNumber(c)}`;
+          answer = (a - b) * c;
+          break;
+
+        case 3:
+          a = randomInt(-10, 10);
+          b = randomInt(-9, 9);
+          d = nonZeroInt(-6, 6);
+          q = randomInt(-8, 8);
+          c = d * q;
+          expression = `${formatNumber(a)} × ${formatNumber(b)} - ${formatNumber(c)} ÷ ${formatNumber(d)}`;
+          answer = a * b - c / d;
+          break;
+
+        case 4:
+          a = randomInt(-15, 15);
+          b = randomInt(-8, 8);
+          c = randomInt(-10, 12);
+          d = randomInt(-10, 12);
+          expression = `${formatNumber(a)} + ${formatNumber(b)} × (${c} - ${formatNumber(d)})`;
+          answer = a + b * (c - d);
+          break;
+
+        case 5:
+          b = nonZeroInt(-6, 6);
+          q = randomInt(-10, 10);
+          a = b * q;
+          c = randomInt(-8, 8);
+          d = randomInt(-7, 7);
+          expression = `${formatNumber(a)} ÷ ${formatNumber(b)} + ${formatNumber(c)} × ${formatNumber(d)}`;
+          answer = a / b + c * d;
+          break;
+
+        case 6:
+          c = nonZeroInt(2, 6);
+          q = randomInt(-9, 9);
+          a = randomInt(-15, 15);
+          b = c * q - a;
+          d = randomInt(-10, 10);
+          expression = `(${a} + ${formatNumber(b)}) ÷ ${c} - ${formatNumber(d)}`;
+          answer = (a + b) / c - d;
+          break;
+
+        default:
+          a = randomInt(-12, 12);
+          b = randomInt(-10, 10);
+          c = randomInt(-8, 8);
+          d = nonZeroInt(-6, 6);
+          q = randomInt(-7, 7);
+          const divisible = d * q;
+          expression = `${formatNumber(a)} - ${formatNumber(b)} × ${formatNumber(c)} + ${formatNumber(divisible)} ÷ ${formatNumber(d)}`;
+          answer = a - b * c + divisible / d;
+      }
+
+      return { expression, answer };
+    }
+
+    function createBoard() {
+      boardEl.innerHTML = "";
+
+      for (let row = 4; row >= 0; row--) {
+        const numbers = [];
+
+        if (row % 2 === 0) {
+          for (let n = row * 5 + 1; n <= row * 5 + 5; n++) numbers.push(n);
+        } else {
+          for (let n = row * 5 + 5; n >= row * 5 + 1; n--) numbers.push(n);
+        }
+
+        numbers.forEach(number => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.id = `cell-${number}`;
+
+          const numberEl = document.createElement("span");
+          numberEl.className = "cell-number";
+          numberEl.textContent = number;
+          cell.appendChild(numberEl);
+
+          if (ladders[number]) {
+            const badge = document.createElement("span");
+            badge.className = "jump-badge";
+            badge.title = `Tangga ke ${ladders[number]}`;
+            badge.textContent = "🪜";
+            cell.appendChild(badge);
+          }
+
+          if (snakes[number]) {
+            const badge = document.createElement("span");
+            badge.className = "jump-badge";
+            badge.title = `Ular ke ${snakes[number]}`;
+            badge.textContent = "🐍";
+            cell.appendChild(badge);
+          }
+
+          const tokens = document.createElement("div");
+          tokens.className = "tokens";
+          cell.appendChild(tokens);
+
+          boardEl.appendChild(cell);
+        });
+      }
+    }
+
+    function updateTokens() {
+      document.querySelectorAll(".tokens").forEach(el => el.innerHTML = "");
+
+      players.forEach((player, index) => {
+        if (player.position < 1) return;
+
+        const cell = document.querySelector(`#cell-${player.position} .tokens`);
+        if (!cell) return;
+
+        const token = document.createElement("div");
+        token.className = `token p${index + 1}`;
+        token.textContent = index + 1;
+        token.title = player.name;
+        cell.appendChild(token);
+      });
+    }
+
+    function updateScoreboard() {
+      scoreboardEl.innerHTML = "";
+
+      players.forEach((player, index) => {
+        const card = document.createElement("div");
+        card.className = `player-card ${index === currentPlayer ? "active" : ""}`;
+        card.innerHTML = `
+          <span class="dot p${index + 1}"></span>
+          <div>
+            <strong>${escapeHTML(player.name)}</strong>
+            <div class="stats">Benar: ${player.correct} | Salah: ${player.wrong}</div>
+          </div>
+          <div class="position">${player.position}</div>
+        `;
+        scoreboardEl.appendChild(card);
+      });
+    }
+
+    function escapeHTML(text) {
+      return String(text).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function showMessage(text, type = "info") {
+      messageEl.className = `message ${type}`;
+      messageEl.textContent = text;
+    }
+
+    function setTurnDisplay() {
+      turnName.textContent = players[currentPlayer].name;
+      turnName.style.color = currentPlayer === 0 ? "var(--p1)" : "var(--p2)";
+      updateScoreboard();
+    }
+
+    function startGame() {
+      const name1 = name1Input.value.trim() || "Pemain 1";
+      const name2 = name2Input.value.trim() || "Pemain 2";
+
+      players = [
+        { name: name1, position: 0, correct: 0, wrong: 0 },
+        { name: name2, position: 0, correct: 0, wrong: 0 }
+      ];
+
+      currentPlayer = 0;
+      rolledNumber = 0;
+      currentQuestion = null;
+      awaitingAnswer = false;
+      gameStarted = true;
+
+      setupPanel.classList.add("hidden");
+      gamePanel.classList.remove("hidden");
+      normalGame.classList.remove("hidden");
+      winnerPanel.classList.add("hidden");
+      questionBox.classList.add("hidden");
+      rollBtn.disabled = false;
+      answerInput.value = "";
+      diceEl.textContent = "⚄";
+
+      setTurnDisplay();
+      updateTokens();
+      showMessage(`${players[0].name} mendapat giliran pertama. Lempar dadu!`, "info");
+    }
+
+    function rollDice() {
+      if (!gameStarted || awaitingAnswer) return;
+
+      rollBtn.disabled = true;
+      let animationCount = 0;
+
+      const animation = setInterval(() => {
+        const tempRoll = randomInt(1, 6);
+        diceEl.textContent = diceFaces[tempRoll - 1];
+        animationCount++;
+
+        if (animationCount >= 10) {
+          clearInterval(animation);
+
+          rolledNumber = randomInt(1, 6);
+          diceEl.textContent = diceFaces[rolledNumber - 1];
+          currentQuestion = generateQuestion();
+          awaitingAnswer = true;
+
+          questionText.textContent = `${currentQuestion.expression} = ?`;
+          questionBox.classList.remove("hidden");
+          answerInput.value = "";
+          answerInput.focus();
+
+          showMessage(
+            `${players[currentPlayer].name} mendapat angka ${rolledNumber}. Jawab dengan benar untuk maju.`,
+            "warning"
+          );
+        }
+      }, 70);
+    }
+
+    function submitAnswer() {
+      if (!awaitingAnswer || !currentQuestion) return;
+
+      const rawAnswer = answerInput.value.trim();
+      if (rawAnswer === "") {
+        showMessage("Masukkan jawaban terlebih dahulu.", "error");
+        answerInput.focus();
+        return;
+      }
+
+      const player = players[currentPlayer];
+      const userAnswer = Number(rawAnswer);
+
+      if (userAnswer === currentQuestion.answer) {
+        player.correct++;
+        movePlayer(player, rolledNumber);
+      } else {
+        player.wrong++;
+        showMessage(
+          `Jawaban belum tepat. Jawaban yang benar adalah ${currentQuestion.answer}. Giliran berpindah.`,
+          "error"
+        );
+        finishTurn();
+      }
+    }
+
+    function movePlayer(player, steps) {
+      const proposedPosition = player.position + steps;
+
+      if (proposedPosition > 25) {
+        showMessage(
+          `Jawaban benar, tetapi harus mendapat angka yang tepat untuk mencapai 25. Posisi tetap di ${player.position}.`,
+          "warning"
+        );
+        finishTurn();
+        return;
+      }
+
+      player.position = proposedPosition;
+      let resultText = `Benar! ${player.name} maju ${steps} langkah ke kotak ${player.position}.`;
+
+      if (ladders[player.position]) {
+        const start = player.position;
+        player.position = ladders[player.position];
+        resultText += ` 🪜 Naik tangga dari ${start} ke ${player.position}!`;
+      } else if (snakes[player.position]) {
+        const start = player.position;
+        player.position = snakes[player.position];
+        resultText += ` 🐍 Terkena ular dari ${start} turun ke ${player.position}!`;
+      }
+
+      updateTokens();
+      updateScoreboard();
+
+      if (player.position === 25) {
+        endGame(player);
+        return;
+      }
+
+      showMessage(resultText, "success");
+      finishTurn(false);
+    }
+
+    function finishTurn(showDefaultMessage = true) {
+      awaitingAnswer = false;
+      currentQuestion = null;
+      questionBox.classList.add("hidden");
+      answerInput.value = "";
+
+      currentPlayer = currentPlayer === 0 ? 1 : 0;
+      setTurnDisplay();
+      rollBtn.disabled = false;
+
+      if (showDefaultMessage) {
+        setTimeout(() => {
+          if (!awaitingAnswer && gameStarted) {
+            showMessage(`Sekarang giliran ${players[currentPlayer].name}. Lempar dadu!`, "info");
+          }
+        }, 1100);
+      } else {
+        setTimeout(() => {
+          if (!awaitingAnswer && gameStarted) {
+            showMessage(`Sekarang giliran ${players[currentPlayer].name}. Lempar dadu!`, "info");
+          }
+        }, 1500);
+      }
+    }
+
+    function endGame(player) {
+      gameStarted = false;
+      awaitingAnswer = false;
+      normalGame.classList.add("hidden");
+      winnerPanel.classList.remove("hidden");
+      winnerText.textContent = `${player.name} Menang!`;
+      winnerStats.textContent =
+        `Jawaban benar: ${player.correct} | Jawaban salah: ${player.wrong}`;
+    }
+
+    function resetToSetup() {
+      gameStarted = false;
+      awaitingAnswer = false;
+      players = [];
+      currentPlayer = 0;
+      setupPanel.classList.remove("hidden");
+      gamePanel.classList.add("hidden");
+      normalGame.classList.remove("hidden");
+      winnerPanel.classList.add("hidden");
+      updateTokens();
+    }
+
+    startBtn.addEventListener("click", startGame);
+    rollBtn.addEventListener("click", rollDice);
+    answerBtn.addEventListener("click", submitAnswer);
+    resetBtn.addEventListener("click", resetToSetup);
+    playAgainBtn.addEventListener("click", startGame);
+
+    answerInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") submitAnswer();
+    });
+
+    createBoard();
+  </script>
+</body>
+</html>
