@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ular Tangga Matematika Versus</title>
+  <title>Ular Tangga Matematika 2 atau 4 Pemain</title>
   <style>
     :root {
       --bg: #eef6ff;
@@ -18,6 +18,8 @@
       --line: #dbe5f0;
       --p1: #ef4444;
       --p2: #3b82f6;
+      --p3: #22c55e;
+      --p4: #f59e0b;
     }
 
     * { box-sizing: border-box; }
@@ -138,6 +140,8 @@
 
     .token.p1 { background: var(--p1); }
     .token.p2 { background: var(--p2); }
+    .token.p3 { background: var(--p3); }
+    .token.p4 { background: var(--p4); }
 
     .side {
       display: grid;
@@ -148,6 +152,41 @@
 
     .setup h2, .game-panel h2, .rules h3 {
       margin-top: 0;
+    }
+
+
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .mode-option {
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+      font-weight: 800;
+      background: #fff;
+      transition: .15s ease;
+      user-select: none;
+    }
+
+    .mode-option:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .mode-option.active {
+      color: #fff;
+      border-color: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+
+    .mode-option input {
+      display: none;
     }
 
     .name-grid {
@@ -307,6 +346,8 @@
 
     .dot.p1 { background: var(--p1); }
     .dot.p2 { background: var(--p2); }
+    .dot.p3 { background: var(--p3); }
+    .dot.p4 { background: var(--p4); }
 
     .stats {
       color: var(--muted);
@@ -363,7 +404,7 @@
   <main class="app">
     <header class="header">
       <h1>🐍 Ular Tangga Matematika 🪜</h1>
-      <p>Urutan Operasi Bilangan Bulat</p>
+      <p>Pilih Mode 2 Pemain atau 4 Pemain — Urutan Operasi Bilangan Bulat</p>
     </header>
 
     <section class="layout">
@@ -374,24 +415,46 @@
           <span>🐍 Ular: turun</span>
           <span>🔴 Pemain 1</span>
           <span>🔵 Pemain 2</span>
+          <span id="legendP3" class="hidden">🟢 Pemain 3</span>
+          <span id="legendP4" class="hidden">🟡 Pemain 4</span>
         </div>
       </div>
 
       <div class="side">
         <section id="setupPanel" class="card panel setup">
           <h2>Mulai Permainan</h2>
-          <p>Masukkan nama kedua pemain.</p>
+          <p>Pilih jumlah pemain, lalu masukkan nama pemain.</p>
+
+          <div class="mode-selector">
+            <label id="mode2Label" class="mode-option active">
+              <input type="radio" name="playerMode" value="2" checked />
+              👥 2 Pemain
+            </label>
+            <label id="mode4Label" class="mode-option">
+              <input type="radio" name="playerMode" value="4" />
+              👨‍👩‍👧‍👦 4 Pemain
+            </label>
+          </div>
+
           <div class="name-grid">
             <label>
-              Nama Pemain 1
+              Nama Pemain 1 — Merah
               <input id="name1" type="text" maxlength="20" value="Pemain 1" />
             </label>
             <label>
-              Nama Pemain 2
+              Nama Pemain 2 — Biru
               <input id="name2" type="text" maxlength="20" value="Pemain 2" />
             </label>
+            <label id="player3Field" class="hidden">
+              Nama Pemain 3 — Hijau
+              <input id="name3" type="text" maxlength="20" value="Pemain 3" />
+            </label>
+            <label id="player4Field" class="hidden">
+              Nama Pemain 4 — Kuning
+              <input id="name4" type="text" maxlength="20" value="Pemain 4" />
+            </label>
           </div>
-          <button id="startBtn" class="btn btn-primary">Mulai Mode Versus</button>
+          <button id="startBtn" class="btn btn-primary">Mulai Permainan</button>
         </section>
 
         <section id="gamePanel" class="card panel game-panel hidden">
@@ -436,7 +499,7 @@
         <section class="card panel rules">
           <h3>Aturan Permainan</h3>
           <ul>
-            <li>Pemain bermain bergiliran pada satu perangkat.</li>
+            <li>Dua atau empat pemain bermain bergiliran pada satu perangkat.</li>
             <li>Lempar dadu, lalu jawab soal urutan operasi.</li>
             <li>Jawaban benar: maju sesuai angka dadu.</li>
             <li>Jawaban salah: tidak bergerak dan giliran berpindah.</li>
@@ -474,6 +537,15 @@
     const winnerPanel = document.getElementById("winnerPanel");
     const name1Input = document.getElementById("name1");
     const name2Input = document.getElementById("name2");
+    const name3Input = document.getElementById("name3");
+    const name4Input = document.getElementById("name4");
+    const player3Field = document.getElementById("player3Field");
+    const player4Field = document.getElementById("player4Field");
+    const legendP3 = document.getElementById("legendP3");
+    const legendP4 = document.getElementById("legendP4");
+    const mode2Label = document.getElementById("mode2Label");
+    const mode4Label = document.getElementById("mode4Label");
+    const modeInputs = document.querySelectorAll('input[name="playerMode"]');
     const startBtn = document.getElementById("startBtn");
     const rollBtn = document.getElementById("rollBtn");
     const answerBtn = document.getElementById("answerBtn");
@@ -495,6 +567,14 @@
     let currentQuestion = null;
     let awaitingAnswer = false;
     let gameStarted = false;
+    let selectedPlayerCount = 2;
+
+    const playerColors = [
+      "var(--p1)",
+      "var(--p2)",
+      "var(--p3)",
+      "var(--p4)"
+    ];
 
     function randomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -683,18 +763,40 @@
 
     function setTurnDisplay() {
       turnName.textContent = players[currentPlayer].name;
-      turnName.style.color = currentPlayer === 0 ? "var(--p1)" : "var(--p2)";
+      turnName.style.color = playerColors[currentPlayer];
       updateScoreboard();
+    }
+
+    function setPlayerMode(count) {
+      selectedPlayerCount = count;
+      const fourPlayers = count === 4;
+
+      player3Field.classList.toggle("hidden", !fourPlayers);
+      player4Field.classList.toggle("hidden", !fourPlayers);
+      legendP3.classList.toggle("hidden", !fourPlayers);
+      legendP4.classList.toggle("hidden", !fourPlayers);
+
+      mode2Label.classList.toggle("active", count === 2);
+      mode4Label.classList.toggle("active", count === 4);
     }
 
     function startGame() {
       const name1 = name1Input.value.trim() || "Pemain 1";
       const name2 = name2Input.value.trim() || "Pemain 2";
+      const name3 = name3Input.value.trim() || "Pemain 3";
+      const name4 = name4Input.value.trim() || "Pemain 4";
 
       players = [
         { name: name1, position: 0, correct: 0, wrong: 0 },
         { name: name2, position: 0, correct: 0, wrong: 0 }
       ];
+
+      if (selectedPlayerCount === 4) {
+        players.push(
+          { name: name3, position: 0, correct: 0, wrong: 0 },
+          { name: name4, position: 0, correct: 0, wrong: 0 }
+        );
+      }
 
       currentPlayer = 0;
       rolledNumber = 0;
@@ -817,7 +919,7 @@
       questionBox.classList.add("hidden");
       answerInput.value = "";
 
-      currentPlayer = currentPlayer === 0 ? 1 : 0;
+      currentPlayer = (currentPlayer + 1) % players.length;
       setTurnDisplay();
       rollBtn.disabled = false;
 
@@ -858,6 +960,12 @@
       updateTokens();
     }
 
+    modeInputs.forEach(input => {
+      input.addEventListener("change", () => {
+        setPlayerMode(Number(input.value));
+      });
+    });
+
     startBtn.addEventListener("click", startGame);
     rollBtn.addEventListener("click", rollDice);
     answerBtn.addEventListener("click", submitAnswer);
@@ -868,6 +976,7 @@
       if (event.key === "Enter") submitAnswer();
     });
 
+    setPlayerMode(2);
     createBoard();
   </script>
 </body>
