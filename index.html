@@ -75,6 +75,15 @@
 
     .board-card { padding: 16px; }
 
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .settings-grid label { min-width: 0; }
+
     .board {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -97,6 +106,12 @@
     .cell:nth-child(4n+2) { background: #dcfce7; }
     .cell:nth-child(4n+3) { background: #fce7f3; }
     .cell:nth-child(4n)   { background: #e0e7ff; }
+
+    .cell.blank-cell {
+      visibility: hidden;
+      border: 0;
+      background: transparent;
+    }
 
     .cell-number {
       position: absolute;
@@ -288,6 +303,39 @@
       letter-spacing: .05em;
     }
 
+    .timer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: #dbeafe;
+      color: var(--primary-dark);
+      font-weight: 800;
+    }
+
+    .timer-display {
+      min-width: 70px;
+      text-align: center;
+      font-size: 22px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-display.danger {
+      color: #fff;
+      background: var(--danger);
+      border-radius: 9px;
+      padding: 4px 8px;
+      animation: timerPulse .7s infinite alternate;
+    }
+
+    @keyframes timerPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+
     .question {
       margin: 10px 0 14px;
       text-align: center;
@@ -395,6 +443,7 @@
       .card { border-radius: 16px; }
       .board-card { padding: 8px; }
       .panel { padding: 15px; }
+      .settings-grid { grid-template-columns: 1fr; }
       .dice-area { grid-template-columns: 68px 1fr; }
       .dice { width: 68px; height: 68px; font-size: 38px; }
     }
@@ -454,6 +503,21 @@
               <input id="name4" type="text" maxlength="20" value="Pemain 4" />
             </label>
           </div>
+
+          <div class="settings-grid">
+            <label>
+              Jumlah Kotak/Langkah
+              <input id="totalStepsInput" type="number" min="10" max="100" step="1" value="25" />
+              <small style="color:var(--muted);font-weight:400;">Dapat diatur 10–100 kotak.</small>
+            </label>
+
+            <label>
+              Durasi Setiap Soal (detik)
+              <input id="durationInput" type="number" min="5" max="300" step="5" value="30" />
+              <small style="color:var(--muted);font-weight:400;">Dapat diatur 5–300 detik.</small>
+            </label>
+          </div>
+
           <button id="startBtn" class="btn btn-primary">Mulai Permainan</button>
         </section>
 
@@ -470,6 +534,10 @@
 
             <div id="questionBox" class="question-box hidden">
               <div class="question-label">Jawab untuk dapat melangkah</div>
+              <div class="timer-row">
+                <span>⏱️ Sisa waktu</span>
+                <span id="timerDisplay" class="timer-display"><span id="timerValue">30</span> detik</span>
+              </div>
               <div id="questionText" class="question">8 + 3 × 2 = ?</div>
               <div class="answer-row">
                 <input id="answerInput" type="number" step="1" placeholder="Jawaban" />
@@ -500,11 +568,12 @@
           <h3>Aturan Permainan</h3>
           <ul>
             <li>Dua atau empat pemain bermain bergiliran pada satu perangkat.</li>
-            <li>Lempar dadu, lalu jawab soal urutan operasi.</li>
+            <li>Atur durasi pengerjaan soal sebelum permainan dimulai.</li>
+            <li>Lempar dadu, lalu jawab soal sebelum waktu habis.</li>
             <li>Jawaban benar: maju sesuai angka dadu.</li>
             <li>Jawaban salah: tidak bergerak dan giliran berpindah.</li>
             <li>Gunakan urutan: kurung, kali/bagi, lalu tambah/kurang.</li>
-            <li>Pemain pertama yang mencapai kotak 25 menjadi pemenang.</li>
+            <li id="finishRule">Pemain pertama yang mencapai kotak 25 menjadi pemenang.</li>
           </ul>
         </section>
       </div>
@@ -514,19 +583,11 @@
   <script>
     "use strict";
 
-    const snakes = {
-      24: 14,
-      21: 11,
-      17: 7,
-      13: 4
-    };
-
-    const ladders = {
-      3: 9,
-      6: 15,
-      10: 18,
-      12: 22
-    };
+    let snakes = {};
+    let ladders = {};
+    let totalCells = 25;
+    let boardColumns = 5;
+    let boardRows = 5;
 
     const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
@@ -539,6 +600,8 @@
     const name2Input = document.getElementById("name2");
     const name3Input = document.getElementById("name3");
     const name4Input = document.getElementById("name4");
+    const durationInput = document.getElementById("durationInput");
+    const totalStepsInput = document.getElementById("totalStepsInput");
     const player3Field = document.getElementById("player3Field");
     const player4Field = document.getElementById("player4Field");
     const legendP3 = document.getElementById("legendP3");
@@ -554,12 +617,15 @@
     const answerInput = document.getElementById("answerInput");
     const questionBox = document.getElementById("questionBox");
     const questionText = document.getElementById("questionText");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const timerValue = document.getElementById("timerValue");
     const turnName = document.getElementById("turnName");
     const diceEl = document.getElementById("dice");
     const messageEl = document.getElementById("message");
     const scoreboardEl = document.getElementById("scoreboard");
     const winnerText = document.getElementById("winnerText");
     const winnerStats = document.getElementById("winnerStats");
+    const finishRule = document.getElementById("finishRule");
 
     let players = [];
     let currentPlayer = 0;
@@ -568,6 +634,9 @@
     let awaitingAnswer = false;
     let gameStarted = false;
     let selectedPlayerCount = 2;
+    let questionDuration = 30;
+    let timeLeft = 30;
+    let timerInterval = null;
 
     const playerColors = [
       "var(--p1)",
@@ -664,19 +733,117 @@
       return { expression, answer };
     }
 
+    function buildJumps(total) {
+      if (total === 25) {
+        return {
+          ladders: { 3: 9, 6: 15, 10: 18, 12: 22 },
+          snakes: { 24: 14, 21: 11, 17: 7, 13: 4 }
+        };
+      }
+
+      const ladderRatios = [
+        [0.10, 0.34],
+        [0.22, 0.52],
+        [0.36, 0.68],
+        [0.50, 0.82],
+        [0.64, 0.92],
+        [0.74, 0.97]
+      ];
+
+      const snakeRatios = [
+        [0.96, 0.62],
+        [0.84, 0.48],
+        [0.72, 0.38],
+        [0.60, 0.26],
+        [0.48, 0.16],
+        [0.36, 0.08]
+      ];
+
+      const desiredCount = Math.min(6, Math.max(2, Math.floor(total / 8)));
+      const newLadders = {};
+      const newSnakes = {};
+      const usedStarts = new Set();
+
+      const scaledCell = ratio =>
+        Math.max(2, Math.min(total - 1, Math.round(1 + ratio * (total - 1))));
+
+      for (const [startRatio, endRatio] of ladderRatios) {
+        if (Object.keys(newLadders).length >= desiredCount) break;
+        const startCell = scaledCell(startRatio);
+        const endCell = scaledCell(endRatio);
+
+        if (endCell - startCell < 3 || usedStarts.has(startCell)) continue;
+        newLadders[startCell] = endCell;
+        usedStarts.add(startCell);
+      }
+
+      for (const [startRatio, endRatio] of snakeRatios) {
+        if (Object.keys(newSnakes).length >= desiredCount) break;
+        const startCell = scaledCell(startRatio);
+        const endCell = scaledCell(endRatio);
+
+        if (startCell - endCell < 3 || usedStarts.has(startCell)) continue;
+        newSnakes[startCell] = endCell;
+        usedStarts.add(startCell);
+      }
+
+      return { ladders: newLadders, snakes: newSnakes };
+    }
+
+    function configureBoard(requestedTotal) {
+      totalCells = Math.min(100, Math.max(10, Math.floor(requestedTotal || 25)));
+      boardColumns = Math.ceil(Math.sqrt(totalCells));
+      boardRows = Math.ceil(totalCells / boardColumns);
+
+      const jumps = buildJumps(totalCells);
+      ladders = jumps.ladders;
+      snakes = jumps.snakes;
+
+      totalStepsInput.value = totalCells;
+      finishRule.textContent =
+        `Pemain pertama yang mencapai kotak ${totalCells} menjadi pemenang.`;
+
+      createBoard();
+    }
+
     function createBoard() {
       boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = `repeat(${boardColumns}, 1fr)`;
+      boardEl.style.aspectRatio = `${boardColumns} / ${boardRows}`;
+      boardEl.setAttribute(
+        "aria-label",
+        `Papan ular tangga dengan ${totalCells} kotak`
+      );
 
-      for (let row = 4; row >= 0; row--) {
+      for (let row = boardRows - 1; row >= 0; row--) {
+        const firstNumber = row * boardColumns + 1;
+        const lastNumber = Math.min(totalCells, (row + 1) * boardColumns);
         const numbers = [];
 
-        if (row % 2 === 0) {
-          for (let n = row * 5 + 1; n <= row * 5 + 5; n++) numbers.push(n);
+        for (let number = firstNumber; number <= lastNumber; number++) {
+          numbers.push(number);
+        }
+
+        if (row % 2 === 1) numbers.reverse();
+
+        const blankCount = boardColumns - numbers.length;
+        const blanks = Array(blankCount).fill(null);
+
+        if (row % 2 === 1) {
+          numbers.unshift(...blanks);
         } else {
-          for (let n = row * 5 + 5; n >= row * 5 + 1; n--) numbers.push(n);
+          numbers.push(...blanks);
         }
 
         numbers.forEach(number => {
+          if (number === null) {
+            const blankCell = document.createElement("div");
+            blankCell.className = "cell blank-cell";
+            blankCell.setAttribute("aria-hidden", "true");
+            boardEl.appendChild(blankCell);
+            return;
+          }
+
           const cell = document.createElement("div");
           cell.className = "cell";
           cell.id = `cell-${number}`;
@@ -740,7 +907,7 @@
             <strong>${escapeHTML(player.name)}</strong>
             <div class="stats">Benar: ${player.correct} | Salah: ${player.wrong}</div>
           </div>
-          <div class="position">${player.position}</div>
+          <div class="position">${player.position}/${totalCells}</div>
         `;
         scoreboardEl.appendChild(card);
       });
@@ -759,6 +926,47 @@
     function showMessage(text, type = "info") {
       messageEl.className = `message ${type}`;
       messageEl.textContent = text;
+    }
+
+    function stopQuestionTimer() {
+      if (timerInterval !== null) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function updateTimerDisplay() {
+      timerValue.textContent = timeLeft;
+      timerDisplay.classList.toggle("danger", timeLeft <= 5);
+    }
+
+    function startQuestionTimer() {
+      stopQuestionTimer();
+      timeLeft = questionDuration;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+          stopQuestionTimer();
+
+          if (!awaitingAnswer || !gameStarted) return;
+
+          const player = players[currentPlayer];
+          player.wrong++;
+          answerInput.disabled = true;
+          answerBtn.disabled = true;
+
+          showMessage(
+            `Waktu habis! ${player.name} tidak bergerak dan giliran berpindah.`,
+            "error"
+          );
+
+          finishTurn();
+        }
+      }, 1000);
     }
 
     function setTurnDisplay() {
@@ -785,6 +993,19 @@
       const name2 = name2Input.value.trim() || "Pemain 2";
       const name3 = name3Input.value.trim() || "Pemain 3";
       const name4 = name4Input.value.trim() || "Pemain 4";
+      const requestedDuration = Number(durationInput.value);
+      const requestedTotalCells = Number(totalStepsInput.value);
+
+      configureBoard(
+        Number.isFinite(requestedTotalCells) ? requestedTotalCells : 25
+      );
+
+      questionDuration = Number.isFinite(requestedDuration)
+        ? Math.min(300, Math.max(5, Math.floor(requestedDuration)))
+        : 30;
+
+      durationInput.value = questionDuration;
+      stopQuestionTimer();
 
       players = [
         { name: name1, position: 0, correct: 0, wrong: 0 },
@@ -810,12 +1031,16 @@
       winnerPanel.classList.add("hidden");
       questionBox.classList.add("hidden");
       rollBtn.disabled = false;
+      answerInput.disabled = false;
+      answerBtn.disabled = false;
       answerInput.value = "";
+      timeLeft = questionDuration;
+      updateTimerDisplay();
       diceEl.textContent = "⚄";
 
       setTurnDisplay();
       updateTokens();
-      showMessage(`${players[0].name} mendapat giliran pertama. Lempar dadu!`, "info");
+      showMessage(`${players[0].name} mendapat giliran pertama. Target permainan: kotak ${totalCells}. Lempar dadu!`, "info");
     }
 
     function rollDice() {
@@ -839,8 +1064,11 @@
 
           questionText.textContent = `${currentQuestion.expression} = ?`;
           questionBox.classList.remove("hidden");
+          answerInput.disabled = false;
+          answerBtn.disabled = false;
           answerInput.value = "";
           answerInput.focus();
+          startQuestionTimer();
 
           showMessage(
             `${players[currentPlayer].name} mendapat angka ${rolledNumber}. Jawab dengan benar untuk maju.`,
@@ -862,6 +1090,9 @@
 
       const player = players[currentPlayer];
       const userAnswer = Number(rawAnswer);
+      stopQuestionTimer();
+      answerInput.disabled = true;
+      answerBtn.disabled = true;
 
       if (userAnswer === currentQuestion.answer) {
         player.correct++;
@@ -879,9 +1110,9 @@
     function movePlayer(player, steps) {
       const proposedPosition = player.position + steps;
 
-      if (proposedPosition > 25) {
+      if (proposedPosition > totalCells) {
         showMessage(
-          `Jawaban benar, tetapi harus mendapat angka yang tepat untuk mencapai 25. Posisi tetap di ${player.position}.`,
+          `Jawaban benar, tetapi harus mendapat angka yang tepat untuk mencapai ${totalCells}. Posisi tetap di ${player.position}.`,
           "warning"
         );
         finishTurn();
@@ -904,7 +1135,7 @@
       updateTokens();
       updateScoreboard();
 
-      if (player.position === 25) {
+      if (player.position === totalCells) {
         endGame(player);
         return;
       }
@@ -914,10 +1145,13 @@
     }
 
     function finishTurn(showDefaultMessage = true) {
+      stopQuestionTimer();
       awaitingAnswer = false;
       currentQuestion = null;
       questionBox.classList.add("hidden");
       answerInput.value = "";
+      answerInput.disabled = false;
+      answerBtn.disabled = false;
 
       currentPlayer = (currentPlayer + 1) % players.length;
       setTurnDisplay();
@@ -939,6 +1173,7 @@
     }
 
     function endGame(player) {
+      stopQuestionTimer();
       gameStarted = false;
       awaitingAnswer = false;
       normalGame.classList.add("hidden");
@@ -949,6 +1184,7 @@
     }
 
     function resetToSetup() {
+      stopQuestionTimer();
       gameStarted = false;
       awaitingAnswer = false;
       players = [];
@@ -976,8 +1212,14 @@
       if (event.key === "Enter") submitAnswer();
     });
 
+    totalStepsInput.addEventListener("change", () => {
+      if (gameStarted) return;
+      const requestedTotal = Number(totalStepsInput.value);
+      configureBoard(Number.isFinite(requestedTotal) ? requestedTotal : 25);
+    });
+
     setPlayerMode(2);
-    createBoard();
+    configureBoard(25);
   </script>
 </body>
 </html>
