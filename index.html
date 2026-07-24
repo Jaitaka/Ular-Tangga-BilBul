@@ -73,7 +73,12 @@
       box-shadow: 0 16px 40px rgba(15, 23, 42, .10);
     }
 
-    .board-card { padding: 16px; }
+    .board-card {
+      padding: 14px;
+      background: #eef8c8;
+      border: 8px solid #b7d96a;
+      border-radius: 8px;
+    }
 
     .settings-grid {
       display: grid;
@@ -85,27 +90,35 @@
     .settings-grid label { min-width: 0; }
 
     .board {
+      position: relative;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(10, 1fr);
       aspect-ratio: 1 / 1;
       overflow: hidden;
-      border: 3px solid #1e3a8a;
-      border-radius: 16px;
+      border: 2px solid #8ea45a;
+      border-radius: 0;
       background: #fff;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.65);
     }
 
     .cell {
       position: relative;
       min-width: 0;
-      border: 1px solid rgba(30, 58, 138, .18);
+      border: 1px solid rgba(55, 65, 81, .28);
       padding: 4px;
-      background: #eff6ff;
+      background: #fff8df;
     }
 
-    .cell:nth-child(4n+1) { background: #fef3c7; }
-    .cell:nth-child(4n+2) { background: #dcfce7; }
-    .cell:nth-child(4n+3) { background: #fce7f3; }
-    .cell:nth-child(4n)   { background: #e0e7ff; }
+    .cell:nth-child(10n+1) { background: #f4f7b7; }
+    .cell:nth-child(10n+2) { background: #dbe3eb; }
+    .cell:nth-child(10n+3) { background: #fff4e8; }
+    .cell:nth-child(10n+4) { background: #f8a2aa; }
+    .cell:nth-child(10n+5) { background: #eef1d7; }
+    .cell:nth-child(10n+6) { background: #f8aa84; }
+    .cell:nth-child(10n+7) { background: #f3c5db; }
+    .cell:nth-child(10n+8) { background: #d865b8; }
+    .cell:nth-child(10n+9) { background: #bcc9d6; }
+    .cell:nth-child(10n)   { background: #f8b897; }
 
     .cell.blank-cell {
       visibility: hidden;
@@ -115,22 +128,71 @@
 
     .cell-number {
       position: absolute;
-      top: 3px;
-      left: 5px;
-      font-weight: 800;
-      font-size: clamp(9px, 1.15vw, 15px);
-      opacity: .75;
+      z-index: 5;
+      top: 5px;
+      left: 7px;
+      font-weight: 900;
+      font-size: clamp(10px, 1.05vw, 15px);
+      color: #20242b;
+      text-shadow: 0 1px 0 rgba(255,255,255,.7);
     }
 
-    .jump-badge {
+    .jump-badge { display: none; }
+
+    .board-overlay {
       position: absolute;
-      right: 3px;
-      top: 3px;
-      font-size: clamp(10px, 1.2vw, 16px);
+      inset: 0;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
     }
+
+    .ladder-rail {
+      stroke: #454545;
+      stroke-width: 5;
+      stroke-linecap: round;
+      filter: drop-shadow(0 1px 1px rgba(255,255,255,.6));
+    }
+
+    .ladder-rung {
+      stroke: #454545;
+      stroke-width: 4;
+      stroke-linecap: round;
+    }
+
+    .snake-body {
+      fill: none;
+      stroke: #f07f20;
+      stroke-width: 28;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,.25));
+    }
+
+    .snake-spots {
+      fill: none;
+      stroke: #2c9b50;
+      stroke-width: 11;
+      stroke-linecap: round;
+      stroke-dasharray: 4 22;
+    }
+
+    .snake-head {
+      fill: #f07f20;
+      stroke: #d86512;
+      stroke-width: 3;
+    }
+
+    .snake-eye { fill: #fff; stroke: #2a2a2a; stroke-width: 1.5; }
+    .snake-pupil { fill: #111; }
+    .snake-smile { fill: none; stroke: #263238; stroke-width: 2.5; stroke-linecap: round; }
+    .snake-tongue { stroke: #d81b60; stroke-width: 2.5; stroke-linecap: round; }
 
     .tokens {
       position: absolute;
+      z-index: 6;
       left: 5px;
       right: 5px;
       bottom: 4px;
@@ -343,13 +405,35 @@
       font-weight: 900;
     }
 
-    .answer-row {
+    .answer-choices {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
 
-    .answer-row .btn { width: auto; }
+    .choice-btn {
+      min-height: 52px;
+      border: 2px solid #bfdbfe;
+      border-radius: 13px;
+      padding: 11px 14px;
+      background: #ffffff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 900;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+
+    .choice-btn:disabled {
+      cursor: not-allowed;
+      opacity: .65;
+    }
 
     .message {
       min-height: 48px;
@@ -441,11 +525,12 @@
     @media (max-width: 620px) {
       .app { width: 100%; padding: 10px; }
       .card { border-radius: 16px; }
-      .board-card { padding: 8px; }
+      .board-card { padding: 6px; border-width: 5px; }
       .panel { padding: 15px; }
       .settings-grid { grid-template-columns: 1fr; }
       .dice-area { grid-template-columns: 68px 1fr; }
       .dice { width: 68px; height: 68px; font-size: 38px; }
+      .answer-choices { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -506,9 +591,9 @@
 
           <div class="settings-grid">
             <label>
-              Jumlah Kotak/Langkah
-              <input id="totalStepsInput" type="number" min="10" max="100" step="1" value="25" />
-              <small style="color:var(--muted);font-weight:400;">Dapat diatur 10–100 kotak.</small>
+              Papan Permainan
+              <input id="totalStepsInput" type="number" min="100" max="100" step="1" value="100" readonly />
+              <small style="color:var(--muted);font-weight:400;">Papan klasik 10 × 10 seperti contoh.</small>
             </label>
 
             <label>
@@ -539,10 +624,7 @@
                 <span id="timerDisplay" class="timer-display"><span id="timerValue">30</span> detik</span>
               </div>
               <div id="questionText" class="question">8 + 3 × 2 = ?</div>
-              <div class="answer-row">
-                <input id="answerInput" type="number" step="1" placeholder="Jawaban" />
-                <button id="answerBtn" class="btn btn-success">Jawab</button>
-              </div>
+              <div id="answerChoices" class="answer-choices" aria-label="Pilihan jawaban"></div>
             </div>
 
             <div id="message" class="message info">
@@ -585,9 +667,9 @@
 
     let snakes = {};
     let ladders = {};
-    let totalCells = 25;
-    let boardColumns = 5;
-    let boardRows = 5;
+    let totalCells = 100;
+    let boardColumns = 10;
+    let boardRows = 10;
 
     const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
@@ -611,10 +693,9 @@
     const modeInputs = document.querySelectorAll('input[name="playerMode"]');
     const startBtn = document.getElementById("startBtn");
     const rollBtn = document.getElementById("rollBtn");
-    const answerBtn = document.getElementById("answerBtn");
     const resetBtn = document.getElementById("resetBtn");
     const playAgainBtn = document.getElementById("playAgainBtn");
-    const answerInput = document.getElementById("answerInput");
+    const answerChoices = document.getElementById("answerChoices");
     const questionBox = document.getElementById("questionBox");
     const questionText = document.getElementById("questionText");
     const timerDisplay = document.getElementById("timerDisplay");
@@ -657,6 +738,51 @@
 
     function formatNumber(number) {
       return number < 0 ? `(${number})` : String(number);
+    }
+
+    function shuffleArray(items) {
+      const array = [...items];
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = randomInt(0, i);
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function generateAnswerOptions(correctAnswer) {
+      const options = new Set([correctAnswer]);
+      const spread = Math.max(4, Math.min(20, Math.ceil(Math.abs(correctAnswer) * 0.25) + 3));
+
+      while (options.size < 4) {
+        let distractor = correctAnswer + nonZeroInt(-spread, spread);
+
+        if (Math.random() < 0.25 && correctAnswer !== 0) {
+          distractor = -correctAnswer + randomInt(-3, 3);
+        }
+
+        options.add(distractor);
+      }
+
+      return shuffleArray([...options]);
+    }
+
+    function setAnswerChoicesDisabled(disabled) {
+      answerChoices.querySelectorAll(".choice-btn").forEach(button => {
+        button.disabled = disabled;
+      });
+    }
+
+    function renderAnswerChoices() {
+      answerChoices.innerHTML = "";
+
+      currentQuestion.options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice-btn";
+        button.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+        button.addEventListener("click", () => submitAnswer(option));
+        answerChoices.appendChild(button);
+      });
     }
 
     function generateQuestion() {
@@ -730,10 +856,27 @@
           answer = a - b * c + divisible / d;
       }
 
-      return { expression, answer };
+      return {
+        expression,
+        answer,
+        options: generateAnswerOptions(answer)
+      };
     }
 
     function buildJumps(total) {
+      if (total === 100) {
+        return {
+          ladders: {
+            3: 22, 5: 9, 15: 25, 18: 40, 36: 55, 44: 65, 47: 67,
+            59: 80, 61: 81, 63: 78, 71: 92, 75: 95, 82: 99, 88: 93
+          },
+          snakes: {
+            99: 77, 97: 85, 95: 72, 93: 87, 87: 65, 84: 64, 78: 56,
+            67: 46, 64: 60, 55: 31, 52: 39, 49: 28, 31: 13, 23: 3
+          }
+        };
+      }
+
       if (total === 25) {
         return {
           ladders: { 3: 9, 6: 15, 10: 18, 12: 22 },
@@ -791,9 +934,9 @@
     }
 
     function configureBoard(requestedTotal) {
-      totalCells = Math.min(100, Math.max(10, Math.floor(requestedTotal || 25)));
-      boardColumns = Math.ceil(Math.sqrt(totalCells));
-      boardRows = Math.ceil(totalCells / boardColumns);
+      totalCells = 100;
+      boardColumns = 10;
+      boardRows = 10;
 
       const jumps = buildJumps(totalCells);
       ladders = jumps.ladders;
@@ -876,6 +1019,97 @@
           boardEl.appendChild(cell);
         });
       }
+
+      renderBoardDecorations();
+    }
+
+    function cellCenter(number) {
+      const zero = number - 1;
+      const logicalRow = Math.floor(zero / boardColumns);
+      const indexInRow = zero % boardColumns;
+      const column = logicalRow % 2 === 0 ? indexInRow : boardColumns - 1 - indexInRow;
+      const visualRow = boardRows - 1 - logicalRow;
+      const cellWidth = 1000 / boardColumns;
+      const cellHeight = 1000 / boardRows;
+      return {
+        x: column * cellWidth + cellWidth / 2,
+        y: visualRow * cellHeight + cellHeight / 2
+      };
+    }
+
+    function svgElement(name, attributes = {}) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+
+    function drawLadder(svg, startCell, endCell) {
+      const start = cellCenter(startCell);
+      const end = cellCenter(endCell);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const px = (-dy / length) * 15;
+      const py = (dx / length) * 15;
+      const group = svgElement("g", { "aria-hidden": "true" });
+
+      group.append(
+        svgElement("line", { x1: start.x + px, y1: start.y + py, x2: end.x + px, y2: end.y + py, class: "ladder-rail" }),
+        svgElement("line", { x1: start.x - px, y1: start.y - py, x2: end.x - px, y2: end.y - py, class: "ladder-rail" })
+      );
+
+      const rungCount = Math.max(3, Math.floor(length / 58));
+      for (let i = 1; i < rungCount; i++) {
+        const t = i / rungCount;
+        const x = start.x + dx * t;
+        const y = start.y + dy * t;
+        group.appendChild(svgElement("line", {
+          x1: x + px, y1: y + py, x2: x - px, y2: y - py, class: "ladder-rung"
+        }));
+      }
+      svg.appendChild(group);
+    }
+
+    function drawSnake(svg, headCell, tailCell, bend = 1) {
+      const head = cellCenter(headCell);
+      const tail = cellCenter(tailCell);
+      const dx = tail.x - head.x;
+      const dy = tail.y - head.y;
+      const horizontal = Math.max(70, Math.min(180, Math.abs(dy) * .28));
+      const sign = bend % 2 === 0 ? -1 : 1;
+      const c1 = { x: head.x + sign * horizontal, y: head.y + dy * .28 };
+      const c2 = { x: tail.x - sign * horizontal, y: head.y + dy * .72 };
+      const pathData = `M ${head.x} ${head.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${tail.x} ${tail.y}`;
+
+      svg.appendChild(svgElement("path", { d: pathData, class: "snake-body" }));
+      svg.appendChild(svgElement("path", { d: pathData, class: "snake-spots" }));
+
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      const headGroup = svgElement("g", { transform: `translate(${head.x} ${head.y}) rotate(${angle + 90})` });
+      headGroup.appendChild(svgElement("ellipse", { cx: 0, cy: 0, rx: 26, ry: 22, class: "snake-head" }));
+      headGroup.appendChild(svgElement("circle", { cx: -9, cy: -8, r: 7, class: "snake-eye" }));
+      headGroup.appendChild(svgElement("circle", { cx: 9, cy: -8, r: 7, class: "snake-eye" }));
+      headGroup.appendChild(svgElement("circle", { cx: -9, cy: -8, r: 3, class: "snake-pupil" }));
+      headGroup.appendChild(svgElement("circle", { cx: 9, cy: -8, r: 3, class: "snake-pupil" }));
+      headGroup.appendChild(svgElement("path", { d: "M -10 7 Q 0 15 10 7", class: "snake-smile" }));
+      headGroup.appendChild(svgElement("line", { x1: 0, y1: 14, x2: 0, y2: 28, class: "snake-tongue" }));
+      headGroup.appendChild(svgElement("line", { x1: 0, y1: 28, x2: -6, y2: 34, class: "snake-tongue" }));
+      headGroup.appendChild(svgElement("line", { x1: 0, y1: 28, x2: 6, y2: 34, class: "snake-tongue" }));
+      svg.appendChild(headGroup);
+    }
+
+    function renderBoardDecorations() {
+      boardEl.querySelector(".board-overlay")?.remove();
+      const svg = svgElement("svg", {
+        class: "board-overlay",
+        viewBox: "0 0 1000 1000",
+        preserveAspectRatio: "none",
+        "aria-hidden": "true"
+      });
+
+      Object.entries(ladders).forEach(([start, end]) => drawLadder(svg, Number(start), Number(end)));
+      Object.entries(snakes).forEach(([head, tail], index) => drawSnake(svg, Number(head), Number(tail), index));
+      boardEl.appendChild(svg);
     }
 
     function updateTokens() {
@@ -956,8 +1190,7 @@
 
           const player = players[currentPlayer];
           player.wrong++;
-          answerInput.disabled = true;
-          answerBtn.disabled = true;
+          setAnswerChoicesDisabled(true);
 
           showMessage(
             `Waktu habis! ${player.name} tidak bergerak dan giliran berpindah.`,
@@ -997,7 +1230,7 @@
       const requestedTotalCells = Number(totalStepsInput.value);
 
       configureBoard(
-        Number.isFinite(requestedTotalCells) ? requestedTotalCells : 25
+        100
       );
 
       questionDuration = Number.isFinite(requestedDuration)
@@ -1030,10 +1263,8 @@
       normalGame.classList.remove("hidden");
       winnerPanel.classList.add("hidden");
       questionBox.classList.add("hidden");
+      answerChoices.innerHTML = "";
       rollBtn.disabled = false;
-      answerInput.disabled = false;
-      answerBtn.disabled = false;
-      answerInput.value = "";
       timeLeft = questionDuration;
       updateTimerDisplay();
       diceEl.textContent = "⚄";
@@ -1063,11 +1294,9 @@
           awaitingAnswer = true;
 
           questionText.textContent = `${currentQuestion.expression} = ?`;
+          renderAnswerChoices();
           questionBox.classList.remove("hidden");
-          answerInput.disabled = false;
-          answerBtn.disabled = false;
-          answerInput.value = "";
-          answerInput.focus();
+          setAnswerChoicesDisabled(false);
           startQuestionTimer();
 
           showMessage(
@@ -1078,21 +1307,12 @@
       }, 70);
     }
 
-    function submitAnswer() {
+    function submitAnswer(userAnswer) {
       if (!awaitingAnswer || !currentQuestion) return;
 
-      const rawAnswer = answerInput.value.trim();
-      if (rawAnswer === "") {
-        showMessage("Masukkan jawaban terlebih dahulu.", "error");
-        answerInput.focus();
-        return;
-      }
-
       const player = players[currentPlayer];
-      const userAnswer = Number(rawAnswer);
       stopQuestionTimer();
-      answerInput.disabled = true;
-      answerBtn.disabled = true;
+      setAnswerChoicesDisabled(true);
 
       if (userAnswer === currentQuestion.answer) {
         player.correct++;
@@ -1149,9 +1369,7 @@
       awaitingAnswer = false;
       currentQuestion = null;
       questionBox.classList.add("hidden");
-      answerInput.value = "";
-      answerInput.disabled = false;
-      answerBtn.disabled = false;
+      answerChoices.innerHTML = "";
 
       currentPlayer = (currentPlayer + 1) % players.length;
       setTurnDisplay();
@@ -1204,22 +1422,17 @@
 
     startBtn.addEventListener("click", startGame);
     rollBtn.addEventListener("click", rollDice);
-    answerBtn.addEventListener("click", submitAnswer);
     resetBtn.addEventListener("click", resetToSetup);
     playAgainBtn.addEventListener("click", startGame);
-
-    answerInput.addEventListener("keydown", event => {
-      if (event.key === "Enter") submitAnswer();
-    });
 
     totalStepsInput.addEventListener("change", () => {
       if (gameStarted) return;
       const requestedTotal = Number(totalStepsInput.value);
-      configureBoard(Number.isFinite(requestedTotal) ? requestedTotal : 25);
+      configureBoard(100);
     });
 
     setPlayerMode(2);
-    configureBoard(25);
+    configureBoard(100);
   </script>
 </body>
 </html>
